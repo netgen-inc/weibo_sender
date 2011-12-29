@@ -5,6 +5,7 @@ var queue = require('./lib/queue');
 var logger = require('./lib/logger').logger(settings.logFile);
 
 var util = require('util');
+var fs = require('fs');
 
 
 //删除队列的API
@@ -45,7 +46,7 @@ setTimeout(function(){
    }
 }, 1000);
 var dequeue = function(){
-    if(sender.length == 0){
+    if(senders.length == 0){
         return;   
     }
     sendQ.dequeue(function(err, task){
@@ -129,3 +130,4 @@ var Sender = function(){
     }
 };
 util.inherits(Sender, events.EventEmitter); 
+fs.writeFileSync(__dirname + '/server.pid', process.pid.toString(), 'ascii');
