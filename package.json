@@ -1,0 +1,17 @@
+{
+    "name": "sender",
+    "version": "0.1.0",
+    "description": "send micro blog to weibo.com",
+    "author": "iamlaobie <iamlaobie@gmail.com>",
+    "dependencies": {
+        "zmq": ">= 2.0.0"
+    },
+    "scripts": {
+        "start": "node send.js",
+        "devent": "https://github.com/netgen-inc/devent/tarball/master",
+        "queuer": "https://github.com/netgen-inc/queuer/tarball/master"
+    },
+    "engines": {
+        "node": "0.6.x"
+    }
+}
