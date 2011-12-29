@@ -4,12 +4,13 @@
     "description": "send micro blog to weibo.com",
     "author": "iamlaobie <iamlaobie@gmail.com>",
     "dependencies": {
-        "zmq": ">= 2.0.0"
+        "devent": "https://github.com/netgen-inc/devent/tarball/master",
+        "queuer": "https://github.com/netgen-inc/queuer/tarball/master",
+        "mysql": ">= 0.9.5",
+        "request":">=2.9.3"
     },
     "scripts": {
-        "start": "node send.js",
-        "devent": "https://github.com/netgen-inc/devent/tarball/master",
-        "queuer": "https://github.com/netgen-inc/queuer/tarball/master"
+        "start": "node send.js"
     },
     "engines": {
         "node": "0.6.x"
