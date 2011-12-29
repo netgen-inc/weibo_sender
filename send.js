@@ -1,7 +1,7 @@
 var settings = require('./etc/settings').settings;
 var url = require('url');
-var de = require('../event/lib/devent').createDEvent('sender');
-var queue = require('./lib/queue');
+var de = require('devent').createDEvent('sender');
+var queue = require('queuer');
 var logger = require('./lib/logger').logger(settings.logFile);
 
 var util = require('util');
