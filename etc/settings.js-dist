@@ -17,16 +17,12 @@ var settings = {
         database:'stock_radar'
     },
     queue:{
-        send:'weibo_send_liujun',
-        remove:'weibo_delete_liujun',
+        send:'weibo_send',
+        remove:'weibo_delete',
         host:'172.16.33.237',
         port:'3000',
         interval:10000 //轮询间隔，单位是毫秒
-    },
-    hook:{
-        host:'127.0.0.1'    
     }
-    
 }
 
 exports.settings = settings;
