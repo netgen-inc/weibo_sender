@@ -16,7 +16,9 @@ var settings = {
     },
     queue:{
         send:'weibo_send', //发送微博任务的队列名
-        interval:10000 //轮询间隔，单位是毫秒
+        interval:10000, //轮询间隔，单位是毫秒
+        host:'172.16.33.237', //队列服务
+        port:3000 //队列服务的端口
     }
 }
 
