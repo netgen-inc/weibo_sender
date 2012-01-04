@@ -7,6 +7,7 @@ var logger = require('./lib/logger').logger(settings.logFile);
 var util = require('util');
 var fs = require('fs');
 
+var event = require('events').EventEmitter;
 
 //删除队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
@@ -39,17 +40,13 @@ setInterval(function(){
 }, settings.queue.interval);
 
 var senders = [];
-setTimeout(function(){
-    for(i = 0; i < 10; i++){
-        var sender = new Sender();
-        senders.push(sender);
-   }
-}, 1000);
 var dequeue = function(){
     if(senders.length == 0){
+console.log(senders.length);
         return;   
     }
     sendQ.dequeue(function(err, task){
+console.log(task);
         if(err == 'empty' || task == undefined){
             console.log('send queue is empty');
             return;
@@ -70,7 +67,7 @@ var Sender = function(){
         _self.getBlogByUri(task.uri, function(err, results){
             if(err || results.length == 0){
                logger.info("Not found the resource:" + task.uri);
-               hook.emit('task-finished', task); 
+               de.emit('task-finished', task); 
                _self.emit('end');
                return;
             }
@@ -93,9 +90,9 @@ var Sender = function(){
                 console.log(body);
                 if(statusCode != 200){
                     logger.info("Send error\t" + statusCode +"\t" + task.uri);
-                    hook.emit('task-error', task);  
+                    de.emit('task-error', task);  
                 }else{
-                    hook.emit('task-finished', task);
+                    de.emit('task-finished', task);
                     _self.sendSuccess(blog, body.id, blog.stock_code);
                 }
                 _self.emit('end');
@@ -129,5 +126,9 @@ var Sender = function(){
         return true; 
     }
 };
-util.inherits(Sender, events.EventEmitter); 
+util.inherits(Sender, event); 
+for(i = 0; i < 2; i++){
+    var sender = new Sender();
+    senders.push(sender);
+}
 fs.writeFileSync(__dirname + '/server.pid', process.pid.toString(), 'ascii');
