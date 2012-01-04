@@ -54,13 +54,13 @@ var dequeue = function(){
     if(senders.length == 0){
         return;   
     }
+    var sender = senders.pop();
     sendQ.dequeue(function(err, task){
         if(err == 'empty' || task == undefined){
             console.log('send queue is empty');
             return;
         }
         console.log(task);
-        var sender = senders.pop();
         sender.send(task);
     });
 }
@@ -99,8 +99,13 @@ var Sender = function(){
             weibo.send(blog, function(statusCode, body){
                 sent[blog.stock_code] = parseInt(new Date().getTime());
                 if(statusCode != 200){
-                    logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
-                    de.emit('task-error', task);  
+                    if(task.retry >= 5){
+                        de.emit('task-finished', task);
+                        logger.info("Send error\tretry count > 5\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
+                    }else{
+                        logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
+                        de.emit('task-error', task);  
+                    }
                 }else{
                     _self.sendSuccess(blog, body.id, blog.stock_code);
                     de.emit('task-finished', task);
