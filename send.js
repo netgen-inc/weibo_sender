@@ -54,14 +54,18 @@ var dequeue = function(){
     if(senders.length == 0){
         return;   
     }
-    var sender = senders.pop();
     sendQ.dequeue(function(err, task){
         if(err == 'empty' || task == undefined){
             console.log('send queue is empty');
             return;
         }
         console.log(task);
-        sender.send(task);
+        var sender = senders.pop();
+        if(!sender){
+            de.emit('task-error', task);
+        }else{
+            sender.send(task);
+        }
     });
 }
 
@@ -142,7 +146,7 @@ var Sender = function(){
     }
 };
 util.inherits(Sender, event); 
-for(i = 0; i < 1; i++){
+for(i = 0; i < 2; i++){
     var sender = new Sender();
     sender.on('end', function(){
 	    senders.push(sender);
