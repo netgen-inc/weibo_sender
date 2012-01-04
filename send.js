@@ -78,7 +78,13 @@ var Sender = function(){
                return;
             }
             var blog = results[0];
-
+//只发创业板
+            if(!blog.stock_code.match(/^sz300/)){
+                console.log('not sz300');
+                de.emit('task-finished', task);
+                _self.emit('end');
+                return;
+            }
             blog.stock_code = 'sz900000';
             //发送间隔太短
 /*
