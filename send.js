@@ -46,11 +46,9 @@ setInterval(function(){
 var senders = [];
 var dequeue = function(){
     if(senders.length == 0){
-console.log(senders.length);
         return;   
     }
     sendQ.dequeue(function(err, task){
-console.log(task);
         if(err == 'empty' || task == undefined){
             console.log('send queue is empty');
             return;
@@ -77,11 +75,6 @@ var Sender = function(){
             }
             var blog = results[0];
             
-            //debug 记得删除
-            if(blog.stock_code != 'sh601988'){
-                 //hook.emit('task-finished', task); 
-                 //return; 
-            }
             //发送间隔太短
             if(!_self.requestAble(blog.stock_code)){
                 console.log('rate limit');
@@ -89,7 +82,7 @@ var Sender = function(){
                 return;
             }
                 
-            weibo.update(blog, function(statusCode, body){
+            weibo.send(blog, function(statusCode, body){
                 sent[blog.stock_code] = parseInt(new Date().getTime());
                 console.log(body);
                 if(statusCode != 200){
