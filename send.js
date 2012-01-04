@@ -1,24 +1,28 @@
-var settings = require('./etc/settings').settings;
+var fs = require('fs');
+var settings = JSON.parse(fs.readFileSync(__dirname + '/etc/settings.json', 'utf8'));
 var url = require('url');
 var de = require('devent').createDEvent('sender');
 var queue = require('queuer');
 var logger = require('./lib/logger').logger(settings.logFile);
-
 var util = require('util');
-var fs = require('fs');
-
 var event = require('events').EventEmitter;
+var mysql = require('mysql');
+var myCli;
 
 //删除队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
 
 //新浪微博的API
-var weibo = require('./lib/sina').weibo;
+var weibo = new require('./lib/sina').weibo;
 weibo.init(settings);
 
+process.on('SIGUSR2', function () {
+    settings = JSON.parse(fs.readFileSync(__dirname + '/etc/settings.json', 'utf8'));
+    weibo.init(settings);
+});
+
 //初始化mysql客户端
-var mysql = require('mysql');
-var myCli = mysql.createClient(settings.mysql);
+myCli = mysql.createClient(settings.mysql);
 myCli.query('use ' + settings.mysql.database);
 myCli.query('set names utf8');
 
