@@ -37,8 +37,14 @@ de.on('queued', function( queue ){
         dequeue();
     }
 });
-
-
+/*
+setTimeout(function(){
+    var blog = {stock_code:'sz900001', content:'随业绩增长，""%000002明年一季报000001每股净资产达15元多，看多11http://finance.sina.com.cn/chanjing/gsnews/20111229/084311090945.shtml'};   
+    weibo.send(blog, function(statusCode, body){
+       console.log([statusCode, body]);
+    });
+}, 1000);
+*/
 setInterval(function(){
     dequeue();    
 }, settings.queue.interval);
@@ -53,10 +59,8 @@ var dequeue = function(){
             console.log('send queue is empty');
             return;
         }
+        console.log(task);
         var sender = senders.pop();
-        sender.on('end', function(){
-	    senders.push(sender);
-        });
         sender.send(task);
     });
 }
@@ -74,23 +78,26 @@ var Sender = function(){
                return;
             }
             var blog = results[0];
-            
+
+            blog.stock_code = 'sz900000';
             //发送间隔太短
+/*
             if(!_self.requestAble(blog.stock_code)){
                 console.log('rate limit');
+                de.emit('task-error', task);
                 _self.emit('end');
                 return;
             }
-                
+*/
+            blog.task = task;
             weibo.send(blog, function(statusCode, body){
                 sent[blog.stock_code] = parseInt(new Date().getTime());
-                console.log(body);
                 if(statusCode != 200){
-                    logger.info("Send error\t" + statusCode +"\t" + task.uri);
+                    logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
                     de.emit('task-error', task);  
                 }else{
-                    de.emit('task-finished', task);
                     _self.sendSuccess(blog, body.id, blog.stock_code);
+                    de.emit('task-finished', task);
                 }
                 _self.emit('end');
             });
@@ -109,7 +116,7 @@ var Sender = function(){
     this.sendSuccess = function(blog, sinaId, stockCode){
         var time = new Date().getTime();
         time = time.toString().substring(0, 10);
-        var sql = "update micro_blog SET send_time = '"+time+"' WHERE id = '"+blog.id+"'";
+        var sql = "update micro_blog SET send_time = '"+time+"', status = 1 WHERE id = '"+blog.id+"'";
         myCli.query(sql);
         
         var sql = "INSERT INTO sent_micro_blog(micro_blog_id, weibo_id, send_time, stock_code) values("+blog.id+", "+sinaId+", "+time+", '"+stockCode+"')";
@@ -124,8 +131,11 @@ var Sender = function(){
     }
 };
 util.inherits(Sender, event); 
-for(i = 0; i < 2; i++){
+for(i = 0; i < 1; i++){
     var sender = new Sender();
+    sender.on('end', function(){
+	    senders.push(sender);
+    })
     senders.push(sender);
 }
 fs.writeFileSync(__dirname + '/server.pid', process.pid.toString(), 'ascii');
