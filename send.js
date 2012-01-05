@@ -37,14 +37,22 @@ de.on('queued', function( queue ){
         dequeue();
     }
 });
+
 /*
 setTimeout(function(){
-    var blog = {stock_code:'sz900001', content:'随业绩增长，""%000002明年一季报000001每股净资产达15元多，看多11http://finance.sina.com.cn/chanjing/gsnews/20111229/084311090945.shtml'};   
+    var blog = {stock_code:'sz900001', content:'abc'};   
+    var sender = new Sender();
+    var task = { queue: 'weibo_send',
+  uri: 'mysql://172.16.39.117:3306/webio_send?url#1',
+  retry: 1 };
+    sender.send(task);
     weibo.send(blog, function(statusCode, body){
        console.log([statusCode, body]);
     });
 }, 1000);
 */
+
+
 setInterval(function(){
     dequeue();    
 }, settings.queue.interval);
@@ -82,13 +90,6 @@ var Sender = function(){
                return;
             }
             var blog = results[0];
-//只发创业板
-            if(!blog.stock_code.match(/^sz300/)){
-                console.log('not sz300');
-                de.emit('task-finished', task);
-                _self.emit('end');
-                return;
-            }
             blog.stock_code = 'sz900000';
             //发送间隔太短
 /*
@@ -103,12 +104,22 @@ var Sender = function(){
             weibo.send(blog, function(statusCode, body){
                 sent[blog.stock_code] = parseInt(new Date().getTime());
                 if(statusCode != 200){
-                    if(task.retry >= 5){
-                        de.emit('task-finished', task);
-                        logger.info("Send error\tretry count > 5\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
-                    }else{
-                        logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
+                    //发送受限制
+                    if(body.error.match(/^40(308|090)/)){
+                        console.log('too fast');
                         de.emit('task-error', task);  
+                    //40013太长, 40025重复
+                    }else if(body.error.match(/^400(13|25)/)){
+                        de.emit('task-finished', task);                                                                                                                           
+                        logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);  
+                    }else{
+                        if(task.retry >= 5){
+                            de.emit('task-finished', task);
+                            logger.info("Send error\tretry count > 5\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
+                        }else{
+                            logger.info("Send error\t" + statusCode +"\t" + body.error + "\t"+ task.uri);
+                            de.emit('task-error', task);  
+                        }
                     }
                 }else{
                     _self.sendSuccess(blog, body.id, blog.stock_code);
