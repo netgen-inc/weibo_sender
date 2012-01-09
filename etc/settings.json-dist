@@ -1,5 +1,6 @@
 {
     "logFile":"microblog.log",
+    "mode":"debug",
     "weibo":{
         "appkey":"88888888", 
         "secret":"888888888888888888888888888", 

@@ -90,7 +90,11 @@ var Sender = function(){
                return;
             }
             var blog = results[0];
-            blog.stock_code = 'sz900000';
+            
+            //debug模式下，总是使用stock0@netgen.com.cn发送微博
+            if(settings.mode == 'debug'){
+                blog.stock_code = 'sz900000';    
+            }
             //发送间隔太短
 /*
             if(!_self.requestAble(blog.stock_code)){
