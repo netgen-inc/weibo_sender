@@ -1,9 +1,11 @@
 {
     "logFile":"microblog.log",
+    "mode":"debug",
+    "sendersCount":5,
     "weibo":{
         "appkey":"88888888", 
         "secret":"888888888888888888888888888", 
-        "interval":60 
+        "timeout":30000
     },
     "mysql":{
         "host":"172.16.33.237",

@@ -7,7 +7,8 @@
         "devent": "https://github.com/netgen-inc/devent/tarball/master",
         "queuer": "https://github.com/netgen-inc/queuer/tarball/master",
         "mysql": ">= 0.9.5",
-        "request":">=2.9.3"
+        "request":">=2.9.3",
+        "weibo":">=0.3.0"
     },
     "scripts": {
         "start": "node send.js"

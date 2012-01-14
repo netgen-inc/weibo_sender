@@ -2,6 +2,30 @@
 1、复制etc/settings.json.dist为etc/settings.json
 2、按照配置说明修改配置文件
 
+{
+    "logFile":"microblog.log", 日志文件
+    "mode":"debug", 运行模式
+    "sendersCount":5, 并发数
+    "weibo":{
+        "appkey":"88888888", 
+        "secret":"888888888888888888888888888", 
+        "timeout":30000 到新浪的请求timeout
+    },
+    "mysql":{
+        "host":"172.16.33.237",
+        "user":"stockradar",
+        "password":"stockradar",
+        "database":"stock_radar"
+    },
+    "queue":{
+        "send":"weibo_send", 发送队列的名称
+        "interval":10000, 出队间隔
+        "host":"172.16.33.237", 
+        "port":3000 
+    }
+}
+
+
 运行：
 执行命令
 node send.js
