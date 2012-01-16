@@ -25,6 +25,10 @@
     }
 }
 
+请注意：weibo组件在0.3.1版本有bug，请在weibo/lib/tapi.js的236行
+this.api_dispatch(data).update(data, callback, context);
+后增加一行
+return;
 
 运行：
 执行命令
