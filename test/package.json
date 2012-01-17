@@ -1,0 +1,15 @@
+{
+    "name": "sender test",
+    "version": "0.1.0",
+    "description": "unit test for sender",
+    "author": "qiguyu <yoyo_524@hotmail.com>",
+    "dependencies": {
+        "vows":">= 0.6.1"
+    },
+    "scripts": {
+        "start": "node sendertest.js"
+    },
+    "engines": {
+        "node": "0.6.x"
+    }
+}
