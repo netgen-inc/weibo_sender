@@ -8,8 +8,8 @@
         "queuer": "https://github.com/netgen-inc/queuer/tarball/master",
         "mysql": ">= 0.9.5",
         "request":">=2.9.3",
-        "weibo":">=0.3.0",
-        "oauth":"0.9.5"
+        "oauth":"0.9.5",
+        "weibo":"https://github.com/iamlaobie/node-weibo/tarball/master"
     },
     "scripts": {
         "start": "node send.js"
