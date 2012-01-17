@@ -114,7 +114,7 @@ var send = function(task, sender, context){
 var complete = function(error, body, blog, task){
     if(!error){
         logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
-        db.sendSuccess(blog, body.id);
+        db.sendSuccess(blog, body.id, body.t_url);
         return true;
     }
     
@@ -174,6 +174,7 @@ setTimeout(function(){
     });
     send(task, sender, {task:task});
 }, 1000);
+
 
 setTimeout(function(){
     var sender = new Sender();
