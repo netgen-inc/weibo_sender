@@ -33,3 +33,17 @@ return;
 运行：
 执行命令
 node send.js
+
+
+统计工具使用说明：
+1、常规统计
+直接运行命令：
+node stats.js
+
+旧数据统计：
+运行命令：
+node stats.js 开始时间戳
+
+转发数统计结果：rt.log
+评论数统计结果：comment.log
+
