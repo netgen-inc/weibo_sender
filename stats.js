@@ -41,8 +41,8 @@ var load = function(start){
         
         console.log('get blog from db :' + blogs.length);
         for(var i = 0; i < blogs.length; i++){
-            var blog = blogs[i].toLowerCase();
-            countQueue.push(blog);
+            blogs[i].stock_code = blogs[i].stock_code.toLowerCase();
+            countQueue.push(blogs[i]);
         }
     });
 };
