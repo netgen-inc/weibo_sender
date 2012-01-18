@@ -88,6 +88,7 @@ var send = function(task, sender, context){
         }
         
         blog = results[0];
+        blog.stock_code = blog.stock_code.toLowerCase();
         
         //debug模式下，总是使用stock0@netgen.com.cn发送微博
         if(settings.mode == 'debug'){
