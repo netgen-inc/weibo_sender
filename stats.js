@@ -41,7 +41,8 @@ var load = function(start){
         
         console.log('get blog from db :' + blogs.length);
         for(var i = 0; i < blogs.length; i++){
-            countQueue.push(blogs[i]);
+            var blog = blogs[i].toLowerCase();
+            countQueue.push(blog);
         }
     });
 };
