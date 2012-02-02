@@ -22,6 +22,13 @@
         "interval":10000, 出队间隔
         "host":"172.16.33.237", 
         "port":3000 
+    },
+    "mail":{
+        "host":"mail.netgen.com.cn",
+        "user":"abc@example.com",
+        "password":"888888",
+        "port":25,
+        "to":"a@example.com,b@example.com..." 接收统计邮件的邮箱，用逗号分隔
     }
 }
 
@@ -42,4 +49,5 @@ node send.js
     
     
 四、发送统计邮件(cron/send_mail.sh)
-将cron/send_mail.sh配置到cron任务即可
+1、配置配置文件中的邮件信息
+2、将cron/send_mail.sh配置到cron任务即可
