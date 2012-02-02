@@ -65,7 +65,7 @@ var fetchSum = function(task, callback){
         if(err){
             console.log(['fetch counts error:', err]);
             if(task.retry >= 5){
-                console.log(['fetch counts more  than :' + task.retry, data, err]);
+                console.log(['fetch counts more than :' + task.retry, data, err]);
             }else{
                 task.retry += 1;   
                 sumQueue.push(task);
@@ -93,7 +93,7 @@ var fetchSum = function(task, callback){
 var fetchRtList = function(task, callback){
     weibo.tapi.repost_timeline(task, function(err, body, response){
         if(err){
-            console.log(err);
+            console.log([task, err]);
             if(task.retry < 5){
                 task.retry += 1;
                 rtQueue.push(task);
@@ -132,7 +132,7 @@ var fetchRtList = function(task, callback){
 var fetchCommentList = function(task, callback){
     weibo.tapi.comments(task, function(err, body, response){
         if(err){
-            console.log(err);
+            console.log([task, err]);
             if(task.retry < 5){
                 task.retry += 1;
                 commentQueue.push(task);
