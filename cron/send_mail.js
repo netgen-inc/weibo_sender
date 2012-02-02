@@ -208,10 +208,13 @@ async.series([ getHQBlog, getInfoBlog, getDeletedBlog, getRtList, getCommentList
     mail_content += "\r\n\r\n内容生成时间：" + getDateString(null, true);
     var subject = stat_date + '个股雷达统计';
     attachments = [{filename:subject + '.txt', contents:mail_content}];
-    sendMail('liujun@netgen.com.cn', mailBody, subject, attachments);
-    sendMail('tma@netgen.com.cn', mailBody, subject, attachments);
-    sendMail('sjchen@netgen.com.cn', mailBody, subject, attachments);
-    sendMail('wchang@netgen.com.cn', mailBody, subject, attachments);
-    sendMail('zywu@netgen.com.cn', mailBody, subject, attachments);
-    sendMail('xiexiaofang@netgen.com.cn', mailBody, subject, attachments);
+    var tos = settings.mail.to.split(','); 
+    for(var i =0; i < tos.length; i++){
+        var to = tos[i].trim();
+        if(!to){   
+            continue;
+        }        
+        sendMail(to, mailBody, subject, attachments);    
+    }
 });
+

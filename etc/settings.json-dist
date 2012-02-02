@@ -23,6 +23,7 @@
         "host":"mail.netgen.com.cn",
         "user":"abc@example.com",
         "password":"888888",
-        "port":25
+        "port":25,
+        "to":"a@example.com,b@example.com..."
     }
 }
