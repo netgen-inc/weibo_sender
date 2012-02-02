@@ -9,7 +9,10 @@
         "mysql": ">= 0.9.5",
         "request":">=2.9.3",
         "oauth":"0.9.5",
-        "weibo":"https://github.com/iamlaobie/node-weibo/tarball/master"
+        "weibo":"https://github.com/iamlaobie/node-weibo/tarball/master",
+        "nodemailer":">=0.2.4",
+        "async":">=0.1.15",
+        "underscore":">=1.2.3"
     },
     "scripts": {
         "start": "node send.js"

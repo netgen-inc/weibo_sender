@@ -1,4 +1,4 @@
-配置：
+一、配置文件说明
 1、复制etc/settings.json.dist为etc/settings.json
 2、按照配置说明修改配置文件
 
@@ -25,25 +25,21 @@
     }
 }
 
-请注意：weibo组件在0.3.1版本有bug，请在weibo/lib/tapi.js的236行
-this.api_dispatch(data).update(data, callback, context);
-后增加一行
-return;
 
-运行：
+二、发送微博(send.js)
 执行命令
 node send.js
 
 
-统计工具使用说明：
-1、常规统计
-直接运行命令：
-node stats.js
+三、抓取转发和评论列表(rt_comment.js)
 
-旧数据统计：
-运行命令：
-node stats.js 开始时间戳
-
-转发数统计结果：rt.log
-评论数统计结果：comment.log
-
+该程序有两种启动方式：
+1、抓取指定日期的评论和转发，如
+    node /path/to/rt_comment.js 2012-01-31
+    
+2、常态执行，抓取24小时前的一分钟内发送的微博的评论和转发，如：
+    node /path/to/rt_comment.js
+    
+    
+四、发送统计邮件(cron/send_mail.sh)
+将cron/send_mail.sh配置到cron任务即可

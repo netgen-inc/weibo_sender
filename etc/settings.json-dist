@@ -17,6 +17,12 @@
         "send":"weibo_send", 
         "interval":10000, 
         "host":"172.16.33.237", 
-        "port":3000 
+        "port":3000
+    },
+    "mail":{
+        "host":"mail.netgen.com.cn",
+        "user":"abc@example.com",
+        "password":"888888",
+        "port":25
     }
 }
