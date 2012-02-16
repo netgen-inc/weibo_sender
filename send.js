@@ -84,6 +84,7 @@ var send = function(task, sender, context){
         if(err || results.length == 0){
             logger.info("error\tNot found the resource:" + task.uri);
             sender.running = false;
+            taskBack(task, true);
             return; 
         }
         
