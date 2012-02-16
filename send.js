@@ -118,15 +118,15 @@ var complete = function(error, body, blog, task){
         db.sendSuccess(blog, body.id, body.t_url);
         return true;
     }
-    
+
     var errMsg = error.error;
-    logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + errMsg);  
-    
+    logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + errMsg); 
+
     //发送受限制
-    if(errMsg.match(/^40(308|090)/)){
+    if(errMsg && errMsg.match(/^40(308|090)/)){
         return false;
     //40013太长, 40025重复
-    }else if(errMsg.match(/^400(13|25)/)){                                                                                                                          
+    }else if(errMsg && errMsg.match(/^400(13|25)/)){                                                                                                                          
         return true;
     }else{
         if(task.retry >= settings.queue.retry){
@@ -161,6 +161,10 @@ process.on('SIGUSR2', function () {
     for(i = 0; i < senders.length; i++){
         senders[i].init(settings);
     }
+});
+
+process.on('uncaughtException', function(e){
+    console.log('uncaughtException:' + e);
 });
 
 /**
