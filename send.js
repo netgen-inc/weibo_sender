@@ -110,6 +110,7 @@ var send = function(task, sender, context){
             taskBack(task, true);
             return;
         }
+        blog.content = blog.content + blog.url;
         sender.send(blog, weiboAccounts[accountKey], context);
     });
 };
