@@ -89,22 +89,27 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
+        if(blog.source == 'jrj' || blog.source == 'sina'){
+            var accountKey = blog.source;
+        }else{
+            var accountKey = blog.stock_code;
+        }
         
         //debug模式下，总是使用stock0@netgen.com.cn发送微博
         if(settings.mode == 'debug'){
-            blog.stock_code = 'sz900000';    
+            var accountKey = 'sz900000';    
         }
         
         //微博账号错误
-        if(!weiboAccounts[blog.stock_code] || 
-            !weiboAccounts[blog.stock_code].access_token || 
-            !weiboAccounts[blog.stock_code].access_token_secret){
-            logger.info("error\t" + blog.id + "\t" + blog.stock_code + "\tNOT Found the account\t"); 
+        if(!weiboAccounts[accountKey] || 
+            !weiboAccounts[accountKey].access_token || 
+            !weiboAccounts[accountKey].access_token_secret){
+            logger.info("error\t" + blog.id + "\t" + accountKey + "\tNOT Found the account\t"); 
             sender.running = false;
             taskBack(task, true);
             return;
         }
-        sender.send(blog, weiboAccounts[blog.stock_code], context);
+        sender.send(blog, weiboAccounts[accountKey], context);
     });
 };
 
