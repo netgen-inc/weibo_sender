@@ -90,39 +90,49 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
-        if(blog.source == 'jrj' || blog.source == 'sina'){
-            var accountKey = blog.source;
-        }else{
-            var accountKey = blog.stock_code;
-        }
-        
-        //debug模式下，总是使用stock0@netgen.com.cn发送微博
-        if(settings.mode == 'debug'){
-            var accountKey = 'sz900000';    
-        }
         
         //微博账号错误
-        if(!weiboAccounts[accountKey] || 
-            !weiboAccounts[accountKey].access_token || 
-            !weiboAccounts[accountKey].access_token_secret){
+        var account = getAccount(blog);
+        if(!account){
             logger.info("error\t" + blog.id + "\t" + accountKey + "\tNOT Found the account\t"); 
             sender.running = false;
             taskBack(task, true);
             return;
         }
         blog.content = blog.content + blog.url;
-        sender.send(blog, weiboAccounts[accountKey], context);
+        context.user = account;
+        sender.send(blog, account, context);
     });
 };
 
+var getAccount = function(blog){
+    var accountKey = blog.stock_code;
+    if(blog.content_type == 'zixun'){
+        accountKey = blog.source;
+    }
+    
+    //debug模式下，总是使用stock0@netgen.com.cn发送微博
+    if(settings.mode == 'debug'){
+        var accountKey = 'sz900000';    
+    }
+    
+    if(!weiboAccounts[accountKey] || 
+        !weiboAccounts[accountKey].access_token || 
+        !weiboAccounts[accountKey].access_token_secret){
+        return;
+    }
+    return weiboAccounts[accountKey];
+}    
 
 /**
  发送结束后的处理，返回true表示发送完成
 */
-var complete = function(error, body, blog, task){
+var complete = function(error, body, blog, context){
     if(!error){
+        var task = context.task;
+        var user = context.user;
         logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
-        db.sendSuccess(blog, body.id, body.t_url);
+        db.sendSuccess(blog, body.id, body.t_url, user.id);
         return true;
     }
 
@@ -152,7 +162,7 @@ for(i = 0; i < settings.sendersCount; i++){
     (function(s){
         s.on('send', function(error, body, blog, context){
             s.running = false;
-            taskBack(context.task, complete(error, body, blog, context.task));
+            taskBack(context.task, complete(error, body, blog, context));
             dequeue();
         })    
     })(sender);
@@ -176,32 +186,20 @@ process.on('uncaughtException', function(e){
 
 /**
  * 测试代码
+
 setTimeout(function(){
     var sender = new Sender();
     sender.init(settings);
-    var task = {uri:'mysql://abc.com/stock_radar#1'};
+    var task = {uri:'mysql://abc.com/stock_radar#45549'};
     sender.on('send', function(error, body, blog, context){
+        console.log(context);
         console.log(error);
-        taskBack(context.task, complete(error, body, blog));
+        taskBack(context.task, complete(error, body, blog, context));
     });
     send(task, sender, {task:task});
 }, 1000);
+ */
 
-
-setTimeout(function(){
-    var sender = new Sender();
-    sender.init(settings);
-    var task = {uri:'mysql://abc.com/stock_radar#1'};
-    sender.on('repost', function(error, body, id, status, context){
-        console.log([error, body, id, status, context]);
-        //taskBack(context.task, complete(error, body, blog));
-    });
-    sender.repost('3401770199850919', 'abc', weiboAccounts.sz900000, {abc:'abc'});
-}, 1000);
-
-
-
-*/
 
 
 
