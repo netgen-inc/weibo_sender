@@ -18,7 +18,7 @@ var fans = function(task, callback){
             console.log([user, err]);
             callback();
         }else{
-            insert(user.stock_code, result.followers_count, function(err){
+            insert(user.stock_code, result.followers_count, user.id, function(err){
                 if(err){
                     console.log(err);
                 }
@@ -32,11 +32,11 @@ var fans = function(task, callback){
     });
 }
 
-var insert = function(stock, cnt, cb){
+var insert = function(stock, cnt, accountId, cb){
     var d = tool.getDateString(null, false);
-    var sql = "INSERT INTO followers (stock_code, stat_date, cnt) VALUES(?, ?, ?) " + 
+    var sql = "INSERT INTO followers (stock_code, stat_date, cnt, account_id) VALUES(?, ?, ?, ?) " + 
               "ON DUPLICATE KEY UPDATE cnt = ?";
-    cli.query(sql, [stock, d, cnt, cnt], function(err){
+    cli.query(sql, [stock, d, cnt, accountId, cnt], function(err){
         if(err){
             console.log(err);   
         }
