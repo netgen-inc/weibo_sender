@@ -224,7 +224,6 @@ var start = function(){
         }else{
             var datetime = parseInt(Math.floor(new Date(process.argv[2]).getTime() / 1000)) - 8 * 60 * 60;
             var start = parseInt(Math.floor(new Date(process.argv[2]).getTime() / 1000)) - 8 * 60 * 60;
-            var start = 1329380600;
             var si = setInterval(function(){
                 getBlogs(start);
                 start += 60;
