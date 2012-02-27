@@ -100,6 +100,7 @@ var send = function(task, sender, context){
         if(err || results.length == 0){
             logger.info("error\tNot found the resource:" + task.uri);
             sender.running = false;
+            dequeue();
             taskBack(task, true);
             return; 
         }
@@ -110,15 +111,15 @@ var send = function(task, sender, context){
         //微博账号错误
         var account = getAccount(blog);
         
-        //账号受限制
-        if(limitedAccounts[account.email]){
-            sender.running = false;
-            return;
-        }
         if(!account){
-            logger.info("error\t" + blog.id + "\t" + accountKey + "\tNOT Found the account\t"); 
+            logger.info("error\t" + blog.id + "\t" + blog.stock_code + "\t"+blog.source+"\tNOT Found the account\t"); 
             sender.running = false;
             taskBack(task, true);
+            return;
+        }
+
+        if(limitedAccounts[account.email]){
+            sender.running = false;
             return;
         }
         
@@ -142,6 +143,7 @@ var getAccount = function(blog){
     if(!weiboAccounts[accountKey] || 
         !weiboAccounts[accountKey].access_token || 
         !weiboAccounts[accountKey].access_token_secret){
+        console.log('error account key ' + accountKey);
         return;
     }
     return weiboAccounts[accountKey];
@@ -167,6 +169,7 @@ var complete = function(error, body, blog, context){
         if(typeof limitedAccounts[user.email] !== 'object'){
             limitedAccounts[user.email] = {start:tool.timestamp()};
         } 
+console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
     }else if(errMsg && errMsg.match(/^400(13|25)/)){                                                                                                                          
@@ -205,10 +208,11 @@ process.on('SIGUSR2', function () {
         senders[i].init(settings);
     }
 });
-
+/*
 process.on('uncaughtException', function(e){
     console.log('uncaughtException:' + e);
 });
+*/
 
 /**
  * 测试代码
