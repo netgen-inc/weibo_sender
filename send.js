@@ -6,6 +6,8 @@ var queue = require('queuer');
 var logger = require('./lib/logger').logger(settings.logFile);
 var util = require('util');
 var event = require('events').EventEmitter;
+var _ = require('underscore');
+var tool = require('./lib/tool').tool;
 
 //发送队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
@@ -18,8 +20,8 @@ var senders = [];
 var db = require('./lib/db').db;
 db.init(settings);
 
-//所有微博账号
-var weiboAccounts = {};
+//所有微博账号和受限账号
+var weiboAccounts = {}, limitedAccounts = {};
 db.loadAccounts(function(err, accounts){
     if(err){
         console.log('!!!load account error!!!');   
@@ -32,7 +34,21 @@ db.loadAccounts(function(err, accounts){
     start();
 });
 
+//每小时清空受限账号
+setInterval(function(){
+    if(new Date().getMinutes() == 0){
+        return;   
+    }
+    limitedAccounts = {};
+}, 60)
+
+//status == true 任务正常完成
+//status == false 任务失败，重新入队
+//status == 1 不处理，等待队列超时后任务重新入队
 var taskBack = function(task,  status){
+    if(status === 1){
+        return;   
+    }
     if(status){
         de.emit('task-finished', task);  
     }else{
@@ -93,12 +109,19 @@ var send = function(task, sender, context){
         
         //微博账号错误
         var account = getAccount(blog);
+        
+        //账号受限制
+        if(limitedAccounts[account.email]){
+            sender.running = false;
+            return;
+        }
         if(!account){
             logger.info("error\t" + blog.id + "\t" + accountKey + "\tNOT Found the account\t"); 
             sender.running = false;
             taskBack(task, true);
             return;
         }
+        
         blog.content = blog.content + blog.url;
         context.user = account;
         sender.send(blog, account, context);
@@ -128,9 +151,9 @@ var getAccount = function(blog){
  发送结束后的处理，返回true表示发送完成
 */
 var complete = function(error, body, blog, context){
-    if(!error){
-        var task = context.task;
-        var user = context.user;
+    var task = context.task;
+    var user = context.user;
+    if(!error){    
         logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
         return true;
@@ -141,7 +164,10 @@ var complete = function(error, body, blog, context){
 
     //发送受限制
     if(errMsg && errMsg.match(/^40(308|090)/)){
-        return false;
+        if(typeof limitedAccounts[user.email] !== 'object'){
+            limitedAccounts[user.email] = {start:tool.timestamp()};
+        } 
+        return 1;
     //40013太长, 40025重复
     }else if(errMsg && errMsg.match(/^400(13|25)/)){                                                                                                                          
         return true;
