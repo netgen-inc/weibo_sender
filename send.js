@@ -155,20 +155,20 @@ var complete = function(error, body, blog, context){
     var task = context.task;
     var user = context.user;
     if(!error){    
-        logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
+        logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
         return true;
     }
 
     var errMsg = error.error;
-    logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + errMsg); 
+    logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + blog.source +"\t"+ errMsg); 
 
     //发送受限制
     if(errMsg && errMsg.match(/^40(308|090)/)){
         if(typeof limitedAccounts[user.email] !== 'object'){
             limitedAccounts[user.email] = {start:tool.timestamp()};
         } 
-console.log(limitedAccounts);
+        console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
     }else if(errMsg && errMsg.match(/^400(13|25)/)){                                                                                                                          
