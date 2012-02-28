@@ -37,10 +37,9 @@ db.loadAccounts(function(err, accounts){
 //每小时清空受限账号
 setInterval(function(){
     if(new Date().getMinutes() == 0){
-        return;   
+        limitedAccounts = {};
     }
-    limitedAccounts = {};
-}, 60)
+}, 60000)
 
 //status == true 任务正常完成
 //status == false 任务失败，重新入队
@@ -208,11 +207,10 @@ process.on('SIGUSR2', function () {
         senders[i].init(settings);
     }
 });
-/*
+
 process.on('uncaughtException', function(e){
     console.log('uncaughtException:' + e);
 });
-*/
 
 /**
  * 测试代码
