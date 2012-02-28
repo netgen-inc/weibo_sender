@@ -164,7 +164,7 @@ var complete = function(error, body, blog, context){
     logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + blog.source +"\t"+ errMsg); 
 
     //发送受限制
-    if(errMsg && errMsg.match(/^40(308|090)/)){
+    if(errMsg && errMsg.match(/^40(308|090|310)/)){
         if(typeof limitedAccounts[user.email] !== 'object'){
             limitedAccounts[user.email] = {start:tool.timestamp()};
         } 
