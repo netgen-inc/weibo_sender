@@ -36,10 +36,10 @@ db.loadAccounts(function(err, accounts){
 
 //每小时清空受限账号
 setInterval(function(){
-    if(new Date().getMinutes() == 0){
+    if(new Date().getMinutes() % 10 == 0){
         limitedAccounts = {};
     }
-}, 60000)
+}, 60000);
 
 //status == true 任务正常完成
 //status == false 任务失败，重新入队
@@ -119,6 +119,7 @@ var send = function(task, sender, context){
 
         if(limitedAccounts[account.email]){
             sender.running = false;
+            dequeue();
             return;
         }
         
@@ -165,7 +166,7 @@ var complete = function(error, body, blog, context){
 
     //发送受限制
     if(errMsg && errMsg.match(/^40(308|090|310)/)){
-        if(typeof limitedAccounts[user.email] !== 'object'){
+        if(errMsg.match(/^40308/) && typeof limitedAccounts[user.email] !== 'object'){
             limitedAccounts[user.email] = {start:tool.timestamp()};
         } 
         console.log(limitedAccounts);
