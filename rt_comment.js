@@ -83,7 +83,13 @@ var fetchSum = function(task, callback){
             }
             
             if(body[j].rt > 0){
-                rtQueue.push({id:body[j].id,cnt:body[j].rt,user:accounts[body[j].id],retry:0,type:task.type});
+                var pageCnt = Math.ceil(body[j].rt / 20);
+                for(var p = 1; p <= pageCnt; p++){
+                    (function(jj, pp){
+                        rtQueue.push({id:body[jj].id,cnt:20,page:pp,user:accounts[body[jj].id],retry:0,type:task.type});        
+                    })(j, p);
+                }
+                
             }
         }
         callback();
@@ -240,6 +246,19 @@ var start = function(){
         setInterval(getBlogs, 60000);
     }
 }
+
+/*
+var testPagerRt = function(){
+    var id = '3425194263286765';
+    var accounts = {'3425194263286765':weiboAccounts.jrj};
+    sumQueue.push({ids:id, accounts:accounts,retry:0,type:'blog'});
+
+}
+
+setTimeout(function(){
+    testPagerRt();
+}, 1000);
+*/
 
 //每隔10秒打印一次队列长度
 setInterval(function(){
