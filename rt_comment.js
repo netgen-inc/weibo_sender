@@ -180,9 +180,9 @@ var fetchCommentList = function(task, callback){
     });
 }
 
-var sumQueue = async.queue(fetchSum, 1);
-var rtQueue = async.queue(fetchRtList, 1);
-var commentQueue = async.queue(fetchCommentList, 1);
+var sumQueue = async.queue(fetchSum, 5);
+var rtQueue = async.queue(fetchRtList, 5);
+var commentQueue = async.queue(fetchCommentList, 5);
 
 //从数据库中取到需要获取评论数和转发数的微博
 var getBlogs = function(start){
