@@ -79,17 +79,28 @@ var fetchSum = function(task, callback){
         }
         for(var j = 0;j < body.length; j++){
             if(body[j].comments > 0){
-                commentQueue.push({id:body[j].id,cnt:body[j].comments,user:accounts[body[j].id],retry:0,type:task.type});
+                commentQueue.push({
+                    id:body[j].id,
+                    cnt:body[j].comments,
+                    user:accounts[body[j].id],
+                    retry:0,
+                    type:task.type
+                });
             }
             
             if(body[j].rt > 0){
                 var pageCnt = Math.ceil(body[j].rt / 20);
                 for(var p = 1; p <= pageCnt; p++){
-                    (function(jj, pp){
-                        rtQueue.push({id:body[jj].id,cnt:20,page:pp,user:accounts[body[jj].id],retry:0,type:task.type});        
-                    })(j, p);
+                    rtQueue.push({
+                        id:body[j].id,
+                        cnt:20,
+                        page:p,
+                        user:accounts[body[j].id],
+                        blogs:task.blogs,
+                        retry:0,
+                        type:task.type
+                    });        
                 }
-                
             }
         }
         callback();
@@ -99,7 +110,10 @@ var fetchSum = function(task, callback){
 //取每条微博详细的转发列表
 var fetchRtList = function(task, callback){
     var user = task.user;
+    var blogs = task.blogs;
+    delete  task.blogs;
     weibo.tapi.repost_timeline(task, function(err, body, response){
+        console.log(user);
         if(err){
             console.log([task, err]);
             if(task.retry < 5){
@@ -116,10 +130,11 @@ var fetchRtList = function(task, callback){
        
         var cnt = 0;
         for(var i = 0; i < body.length; i++){
+            console.log(blogs[task.id].send_time);
             var rt = body[i];
             var rtTime = getDateString(new Date(body[i].created_at), true); 
-            var sendTime = getDateString(new Date(body[i].retweeted_status.created_at), true);  
-            dbStats.insertRt(rt.retweeted_status.id, rt.id, rtTime, sendTime, rt.text, rt.user.id, task.type, user.id, function(err, info){
+            var sendTime = getDateString(new Date(blogs[task.id].send_time * 1000), true);
+            dbStats.insertRt(task.id, rt.id, rtTime, sendTime, rt.text, rt.user.id, task.type, user.id, function(err, info){
                 //不是1062错误（已经抓取过的转发）的话，打印错误
                 if(err && err.number != 1062){
                     console.log(err);
@@ -165,9 +180,9 @@ var fetchCommentList = function(task, callback){
     });
 }
 
-var sumQueue = async.queue(fetchSum, 5);
-var rtQueue = async.queue(fetchRtList, 5);
-var commentQueue = async.queue(fetchCommentList, 5);
+var sumQueue = async.queue(fetchSum, 1);
+var rtQueue = async.queue(fetchRtList, 1);
+var commentQueue = async.queue(fetchCommentList, 1);
 
 //从数据库中取到需要获取评论数和转发数的微博
 var getBlogs = function(start){
@@ -182,10 +197,14 @@ var getBlogs = function(start){
     //将取评论和转发列表的任务写入队列
     //type标识是微博还是转发(blog,repost)
     var push = function(blogs, type){
-        var ids = '', accounts = {};
+        var ids = '', accounts = {}, someBlogs = {};
         for(var i = 0; i < blogs.length; i++){
             blogs[i].stock_code = blogs[i].stock_code.toLowerCase();
             var id = blogs[i].weibo_id;
+            if(type == 'repost'){
+                blogs[i].send_time = blogs[i].repost_time;
+            }
+            someBlogs[blogs[i].weibo_id] = blogs[i];
             ids += blogs[i].weibo_id + ',';
             var accKey = blogs[i].stock_code;
             if(type == 'blog' && (blogs[i].source == 'jrj' || blogs[i].source == 'sina')){
@@ -195,9 +214,9 @@ var getBlogs = function(start){
             
             if((i != 0 && (i + 1) % 20 == 0) || i == blogs.length - 1){
                 ids = ids.substr(0, ids.length - 1);
-                sumQueue.push({ids:ids, accounts:accounts,retry:0,type:type});
+                sumQueue.push({ids:ids, accounts:accounts,blogs:someBlogs,retry:0,type:type});
                 console.log(sumQueue.length());
-                ids = '', accounts = [];
+                ids = '', accounts = {}, someBlogs = {};
             }
         }
     }
@@ -220,7 +239,7 @@ var getBlogs = function(start){
         push(blogs, 'repost');
     });
 };
-//getBlogs(1327989180);
+
 
 var start = function(){
     //如果进程有三个参数，抓取指定日期的评论和转发
@@ -247,19 +266,6 @@ var start = function(){
     }
 }
 
-/*
-var testPagerRt = function(){
-    var id = '3425194263286765';
-    var accounts = {'3425194263286765':weiboAccounts.jrj};
-    sumQueue.push({ids:id, accounts:accounts,retry:0,type:'blog'});
-
-}
-
-setTimeout(function(){
-    testPagerRt();
-}, 1000);
-*/
-
 //每隔10秒打印一次队列长度
 setInterval(function(){
     console.log(getDateString(null, true) + '\tsum queue:' + sumQueue.length() + '\trt queue:' + rtQueue.length()+'\tcomment queue:' + commentQueue.length());
@@ -269,4 +275,3 @@ setInterval(function(){
 process.on('uncaughtException', function(e){
     console.log('uncaughtException:' + e);
 });
-
