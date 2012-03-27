@@ -44,16 +44,18 @@ var getDateString = function(d, withTime){
     return date;
 }
 
-var weiboAccounts;
+var weiboAccounts = {};
 db.loadAccounts(function(err, accounts){
     if(err){
         console.log('!!!load account error!!!');   
         return;
     }
-    weiboAccounts = accounts;
+    for(var code in accounts){
+        weiboAccounts[accounts[code].id] = accounts[code];
+    }
     console.log('access token loaded');
     start();
-});
+}); 
 
 //一天的毫秒数
 var dayMicroSeconds = 24 * 60 * 60 * 1000;
@@ -113,11 +115,12 @@ var fetchRtList = function(task, callback){
     var blogs = task.blogs;
     delete  task.blogs;
     weibo.tapi.repost_timeline(task, function(err, body, response){
-        console.log(user);
         if(err){
             console.log([task, err]);
             if(task.retry < 5){
                 task.retry += 1;
+                task.user = user;
+                task.blogs = blogs;
                 rtQueue.push(task);
             }
             callback();
@@ -130,7 +133,6 @@ var fetchRtList = function(task, callback){
        
         var cnt = 0;
         for(var i = 0; i < body.length; i++){
-            console.log(blogs[task.id].send_time);
             var rt = body[i];
             var rtTime = getDateString(new Date(body[i].created_at), true); 
             var sendTime = getDateString(new Date(blogs[task.id].send_time * 1000), true);
@@ -154,6 +156,7 @@ var fetchCommentList = function(task, callback){
             console.log([task, err]);
             if(task.retry < 5){
                 task.retry += 1;
+                task.user = user;
                 commentQueue.push(task);
             }
             callback();
@@ -206,11 +209,8 @@ var getBlogs = function(start){
             }
             someBlogs[blogs[i].weibo_id] = blogs[i];
             ids += blogs[i].weibo_id + ',';
-            var accKey = blogs[i].stock_code;
-            if(type == 'blog' && (blogs[i].source == 'jrj' || blogs[i].source == 'sina')){
-                accKey = blogs[i].source; 
-            }
-            accounts[blogs[i].weibo_id] = weiboAccounts[accKey];
+            
+            accounts[blogs[i].weibo_id] = weiboAccounts[blogs[i].account_id];
             
             if((i != 0 && (i + 1) % 20 == 0) || i == blogs.length - 1){
                 ids = ids.substr(0, ids.length - 1);
@@ -240,6 +240,11 @@ var getBlogs = function(start){
     });
 };
 
+/*
+setTimeout(function(){
+    getBlogs(1330074690);    
+}, 1000);
+*/
 
 var start = function(){
     //如果进程有三个参数，抓取指定日期的评论和转发
@@ -271,7 +276,8 @@ setInterval(function(){
     console.log(getDateString(null, true) + '\tsum queue:' + sumQueue.length() + '\trt queue:' + rtQueue.length()+'\tcomment queue:' + commentQueue.length());
 }, 10000);
 
-
+/*
 process.on('uncaughtException', function(e){
     console.log('uncaughtException:' + e);
 });
+*/
