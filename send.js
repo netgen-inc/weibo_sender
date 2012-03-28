@@ -106,12 +106,10 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
-        
         //微博账号错误
         var account = getAccount(blog);
-        
         if(!account){
-            logger.info("error\t" + blog.id + "\t" + blog.stock_code + "\t"+blog.source+"\tNOT Found the account\t"); 
+            logger.info("error\t" + blog.id + "\t" + blog.stock_code + "\t"+blog.block_id + "\t"+blog.content_type + "\t"+blog.source+"\tNOT Found the account\t"); 
             sender.running = false;
             taskBack(task, true);
             return;
@@ -131,10 +129,10 @@ var send = function(task, sender, context){
 
 var getAccount = function(blog){
     var accountKey = blog.stock_code;
-    if(blog.content_type == 'zixun'){
-        accountKey = blog.source;
+    if(blog.block_id && blog.block_id > 0){
+        accountKey = blog.block_id;
     }
-    
+
     //debug模式下，总是使用stock0@netgen.com.cn发送微博
     if(settings.mode == 'debug'){
         var accountKey = 'sz900000';    
@@ -156,7 +154,7 @@ var complete = function(error, body, blog, context){
     var task = context.task;
     var user = context.user;
     if(!error){    
-        logger.info("success\t" + blog.id + "\t" + blog.stock_code + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
+        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
         return true;
     }
@@ -209,17 +207,18 @@ process.on('SIGUSR2', function () {
     }
 });
 
+/*
 process.on('uncaughtException', function(e){
     console.log('uncaughtException:' + e);
 });
-
+*/
 /**
  * 测试代码
-
+ * 
 setTimeout(function(){
     var sender = new Sender();
     sender.init(settings);
-    var task = {uri:'mysql://abc.com/stock_radar#45549'};
+    var task = {uri:'mysql://172.16.33.238:3306/weibo?article_subject#2'};
     sender.on('send', function(error, body, blog, context){
         console.log(context);
         console.log(error);
@@ -227,7 +226,7 @@ setTimeout(function(){
     });
     send(task, sender, {task:task});
 }, 1000);
- */
+*/
 
 
 
