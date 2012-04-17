@@ -30,11 +30,12 @@ var completer = {
 
 //fetch fans count
 var fansCount = function(task, callback){
-    setTimeout(function(){
+    var timer = setTimeout(function(){
         callback();
     }, 30000);
     var user = task.user;
     weibo.tapi.user_show(task, function(err, result){
+        clearTimeout(timer);
         if(err){
             console.log(['fetch fanscount err:', user.stock_code, err]);
             if(task.retry < 5){
@@ -56,11 +57,12 @@ var fansCount = function(task, callback){
 
 
 var fansList = function(task, queueCallback){
-    setTimeout(function(){
+    var timer = setTimeout(function(){
         queueCallback();
     }, 30000);
     var localUser = task.user;
     weibo.tapi.followers(task, function(err, result){
+        clearTimeout(timer);
         if(err){
             if(task.retry < 5){
                 task.retry += 1;
@@ -107,11 +109,12 @@ var fansList = function(task, queueCallback){
 }
 
 var fetchMsgCount =  function(task, queueCallback){
-    setTimeout(function(){
+    var timer = setTimeout(function(){
         queueCallback();
     }, 30000);
     var localUser = task.user;
     weibo.tapi.unread(task, function(err, result){
+        clearTimeout(timer);
         if(err){
             if(task.retry < 5){
                 task.retry += 1;
@@ -129,11 +132,12 @@ var fetchMsgCount =  function(task, queueCallback){
 }
 
 var resetMsgCount = function(task, queueCallback){
-    setTimeout(function(){
+    var timer = setTimeout(function(){
         queueCallback();
     }, 30000);
     var localUser = task.user;
     weibo.tapi.unread(task, function(err, result){
+        clearTimeout(timer);
         if(err){
             console.log(["reset " + localUser.stock_code + 'err:', err]);
             if(task.retry < 5){
