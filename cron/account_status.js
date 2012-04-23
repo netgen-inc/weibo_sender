@@ -136,7 +136,7 @@ var resetMsgCount = function(task, queueCallback){
         queueCallback();
     }, 30000);
     var localUser = task.user;
-    weibo.tapi.unread(task, function(err, result){
+    weibo.tapi.reset_count(task, function(err, result){
         clearTimeout(timer);
         if(err){
             console.log(["reset " + localUser.stock_code + 'err:', err]);
