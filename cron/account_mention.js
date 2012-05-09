@@ -17,24 +17,28 @@ var fetchMentionList = function(task, queueCallback){
     }, 30000);
     var localUser = task.user;
     weibo.tapi.mentions(task, function(err, result){
+        console.log([localUser.stock_code, task.page]);
         clearTimeout(timer);
+        var delay = false;
         if(err){
+            if(typeof err.message == 'object' && typeof err.message.error == 'string' && err.message.error.match(/^40312/)){
+                delay = true;
+            }
             if(task.retry < 5){
                 task.retry += 1;
                 task.user = localUser;
-                if(err.message.match(/^40312/)){
-                    setTimeout(function(){
-                        lq.push(task);
-                    }, 60000);    
-                }else{
-                    lq.push(task);
-                }
-                
+                lq.push(task);
             }
-            console.log(err);
         }
         if(err || result.length == 0){
-            queueCallback();
+            if(delay){
+                console.log("delaying");
+                setTimeout(function(){
+                    queueCallback();
+                }, 10000);
+            }else{
+                queueCallback();
+            }
             return;
         }
 
@@ -55,6 +59,7 @@ var fetchMentionList = function(task, queueCallback){
         }, 1);
 
         q.drain = function(){
+            console.log(duplicated);
             if(!duplicated){
                 task.user = localUser;
                 task.page += 1;
@@ -76,7 +81,7 @@ var lq = async.queue(fetchMentionList, 5);
 lq.drain = function(){
     console.log("complete!!!");
     setTimeout(function(){
-        proecess.exit(0);
+        process.exit(0);
     }, 1000 * 60);
 }
 
