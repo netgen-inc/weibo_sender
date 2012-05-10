@@ -7,7 +7,7 @@ db.init(settings);
 
 var dbStat = require('../lib/db_stats').db;
 dbStat.init(settings);
-dbStat.truncateAccountFollower();
+//dbStat.truncateAccountFollower();
 
 weibo.init('tsina', settings.weibo.appkey, settings.weibo.secret);
 var accounts;
@@ -31,6 +31,7 @@ var fansList = function(task, queueCallback){
             queueCallback();
             return;
         }
+        console.log([result.users.length, result.next_cursor]);
         if(result.next_cursor && result.next_cursor > 0){
             task.user = localUser;
             task.cursor = result.next_cursor;
@@ -69,21 +70,27 @@ var lq = async.queue(fansList, 5);
 lq.drain = function(){
     console.log("complete!!!");
     setTimeout(function(){
-        proecess.exit(0);
+        process.exit(0);
     }, 1000 * 60);
     
 }
 
 db.loadAccounts(function(err, accs){
+    var as = [];
+    if(process.argv[2]){
+        as = process.argv[2].split(',');
+    }
     accounts = accs;
     for(var stock in accounts){
         if(!accounts[stock].weibo_user_id){
             continue;   
         }
 
+        if(as.length > 0 && as.indexOf(stock) == -1){
+            continue;
+        }
         var listTask = {user_id:accounts[stock].weibo_user_id, user:accounts[stock],cursor:-1, count:200,retry:0};
         lq.push(listTask);
-
     }
 });
 
