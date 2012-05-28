@@ -10,14 +10,21 @@ var mcli = mysql.createClient(settings.mysql);
 
 weibo.init('tsina', settings.weibo.appkey, settings.weibo.secret);
 
+var limited[];
 var follow = function(task, qc){
     var localUser = task.user;
+    if(limited.indexOf(localUser.email)){
+        qc();
+        return;
+    }
     weibo.tapi.friendships_create(task, function(err, result){
         if(err){
             if(err.message.error.match(/^40028/)){
-                console.log('today is limited!');
-                process.exit();
+                limited.push(localUser.email);
+                console.log(localUser.email + ' is limited!');
             }
+            qc();
+            return;
         }
         if(!err || (err.message && err.message.error.match(/^40303/))){
             var sql = "update account_followed set follow_time = NOW(), followed = 1 WHERE id = " +  task.id;
