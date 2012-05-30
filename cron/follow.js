@@ -10,16 +10,17 @@ var mcli = mysql.createClient(settings.mysql);
 
 weibo.init('tsina', settings.weibo.appkey, settings.weibo.secret);
 
-var limited[];
+var limited = [];
 var follow = function(task, qc){
     var localUser = task.user;
-    if(limited.indexOf(localUser.email)){
+    if(limited.indexOf(localUser.email) != -1){
+        console.log(localUser.email + ' is limited!');
         qc();
         return;
     }
     weibo.tapi.friendships_create(task, function(err, result){
         if(err){
-            if(err.message.error.match(/^40028/)){
+            if(err.message.error.match(/^40304/)){
                 limited.push(localUser.email);
                 console.log(localUser.email + ' is limited!');
             }
@@ -38,14 +39,14 @@ var follow = function(task, qc){
     });
     
 }
-var q = async.queue(follow, 5);
+var q = async.queue(follow, 3);
 
 db.loadAccounts(function(err, accs){
     var accounts = {};
     for(var stock in accs){
         accounts[accs[stock].id] = accs[stock];
     }
-    var sql = "SELECT * FROM account_followed WHERE followed = 0 LIMIT 1";
+    var sql = "SELECT * FROM account_followed WHERE followed = 0 LIMIT 10000";
     mcli.query(sql, function(err, result){
         if(result.length == 0){
             console.log("No task");
