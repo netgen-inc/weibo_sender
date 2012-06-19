@@ -58,7 +58,7 @@ var fetchCommentList = function(task, queueCallback){
 
 
 
-var lq = async.queue(fetchCommentList, 1);
+var lq = async.queue(fetchCommentList, 3);
 lq.drain = function(){
     console.log("complete!!!");
     setTimeout(function(){
