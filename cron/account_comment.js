@@ -15,8 +15,6 @@ weibo.init('tsina', settings.weibo.appkey, settings.weibo.secret);
 var fetchCommentList = function(task, queueCallback){
     var localUser = task.user;
     weibo.tapi.comments_to_me(task, function(err, result){
-        console.log(result);
-        return;
         if(err){
             if(task.retry < 5){
                 task.retry += 1;
@@ -40,7 +38,7 @@ var fetchCommentList = function(task, queueCallback){
                         comment.user.id.toString(), comment.user.name, comment.status.text, comment.status.id.toString(),
                         new Date(comment.status.created_at)
                     ];
-            dbStat.insertComment(data, function(err, info){
+            dbStat.insertAccountComment(data, function(err, info){
                 if(err && err.number == 1062){
                     duplicated = true;
                 }
@@ -76,7 +74,7 @@ db.loadAccounts(function(err, accs){
             continue;   
         }
 
-        var listTask = {user:accounts[stock], page:1, count:0,retry:0};
+        var listTask = {user:accounts[stock], page:1, count:200,retry:0};
         lq.push(listTask);
     }
 });
