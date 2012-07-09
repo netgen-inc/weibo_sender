@@ -34,9 +34,9 @@ var fetchCommentList = function(task, queueCallback){
             }
 
             comment.account_id = localUser.id;
-            var data = [comment.account_id, comment.text, comment.id.toString(), new Date(comment.created_at),
+            var data = [comment.account_id, comment.text, comment.id.toString(), tool.getDateString(new Date(comment.created_at)),
                         comment.user.id.toString(), comment.user.name, comment.status.text, comment.status.id.toString(),
-                        new Date(comment.status.created_at)
+                        tool.getDateString(new Date(comment.status.created_at))
                     ];
             dbStat.insertAccountComment(data, function(err, info){
                 if(err && err.number == 1062){

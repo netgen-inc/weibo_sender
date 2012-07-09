@@ -77,7 +77,7 @@ var fetchMentionList = function(task, queueCallback){
 
 
 
-var lq = async.queue(fetchMentionList, 5);
+var lq = async.queue(fetchMentionList, 2);
 lq.drain = function(){
     console.log("complete!!!");
     setTimeout(function(){
