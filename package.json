@@ -12,7 +12,8 @@
         "weibo":"https://github.com/iamlaobie/node-weibo/tarball/master",
         "nodemailer":">=0.2.4",
         "async":">=0.1.15",
-        "underscore":">=1.2.3"
+        "underscore":">=1.2.3",
+        "redis":""
     },
     "scripts": {
         "start": "node send.js"

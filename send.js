@@ -8,6 +8,8 @@ var util = require('util');
 var event = require('events').EventEmitter;
 var _ = require('underscore');
 var tool = require('./lib/tool').tool;
+var redis = require("redis");
+var redisCli = redis.createClient(settings.redis.port, settings.redis.host);
 
 //发送队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
@@ -96,6 +98,7 @@ var start = function(){
 
 var send = function(task, sender, context){
     db.getBlogByUri(task.uri, function(err, results){
+        console.log(results);
         if(err || results.length == 0){
             logger.info("error\tNot found the resource:" + task.uri);
             sender.running = false;
@@ -120,12 +123,38 @@ var send = function(task, sender, context){
             dequeue();
             return;
         }
-        
-        blog.content = blog.content + blog.url;
-        context.user = account;
-        sender.send(blog, account, context);
+
+        sendAble(blog, function(err, result){
+            if(!result){
+                sender.running = false;
+                dequeue();
+            }else{
+                blog.content = blog.content + blog.url;
+                context.user = account;
+                sender.send(blog, account, context);    
+            }
+            
+        });
     });
 };
+
+//限速
+var sendAble = function(blog, callback){
+    if(blog.content_type != 'zixun'){
+        callback(null, true);
+        return;
+    }
+    var ts = tool.timestamp();
+    var key = "SEND_LIMIT_" + blog.stock_code;
+    redisCli.get(key, function(err, lastSend){
+        if(!lastSend){
+            redisCli.setex(key, 180, ts);
+            callback(null, true);
+        }else{
+            callback(null, false);
+        }
+    });
+}
 
 var getAccount = function(blog){
     var accountKey = blog.stock_code;
@@ -170,7 +199,8 @@ var complete = function(error, body, blog, context){
         console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
-    }else if(errMsg && errMsg.match(/^400(13|25)/)){                                                                                                                          
+    //40095: content is illegal!
+    }else if(errMsg && errMsg.match(/^400(13|25|95)/)){                                                                                                                          
         return true;
     }else{
         if(task.retry >= settings.queue.retry){
@@ -215,6 +245,7 @@ process.on('uncaughtException', function(e){
 /**
  * 测试代码
  * 
+
 setTimeout(function(){
     var sender = new Sender();
     sender.init(settings);
@@ -226,7 +257,8 @@ setTimeout(function(){
     });
     send(task, sender, {task:task});
 }, 1000);
-*/
+ */
+
 
 
 

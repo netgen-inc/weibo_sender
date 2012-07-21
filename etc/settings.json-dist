@@ -13,6 +13,10 @@
         "password":"stockradar",
         "database":"stock_radar"
     },
+    "redis":{
+        "host":"localhost",
+        "port":6379
+    },
     "queue":{
         "send":"weibo_send", 
         "interval":10000, 
