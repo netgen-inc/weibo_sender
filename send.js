@@ -140,7 +140,7 @@ var send = function(task, sender, context){
 
 //限速
 var sendAble = function(blog, callback){
-    if(blog.content_type != 'zixun'){
+    if(blog.content_type != 'zixun' || blog.stock_code == 'a_stock'){
         callback(null, true);
         return;
     }
