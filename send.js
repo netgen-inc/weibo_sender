@@ -37,9 +37,14 @@ db.loadAccounts(function(err, accounts){
 });
 
 //每小时清空受限账号
+//凌晨2点清空a_stock的计数器
 setInterval(function(){
     if(new Date().getMinutes() % 10 == 0){
         limitedAccounts = {};
+    }
+    var dt = new Date();
+    if(dt.getHours() == 2 && dt.getMinutes() == 1){
+        redisCli.set('a_stock_counter', 0, function(){});
     }
 }, 60000);
 
@@ -140,7 +145,7 @@ var send = function(task, sender, context){
 
 //限速
 var sendAble = function(blog, callback){
-    if(blog.content_type != 'zixun' || blog.stock_code == 'a_stock'){
+    if(blog.content_type != 'zixun'){
         callback(null, true);
         return;
     }
@@ -182,9 +187,20 @@ var getAccount = function(blog){
 var complete = function(error, body, blog, context){
     var task = context.task;
     var user = context.user;
+    var subAstockCounter = function(){
+        if(user.stock_code == 'a_stock'){
+            redisCli.decr('a_stock_counter', function(err, count){
+                if(count < 0){
+                    redisCli.set('a_stock_counter', 0, function(){});
+                }
+            });
+        }
+    }
+
     if(!error){    
         logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
+        subAstockCounter();
         return true;
     }
 
@@ -201,10 +217,12 @@ var complete = function(error, body, blog, context){
     //40013太长, 40025重复
     //40095: content is illegal!
     }else if(errMsg && errMsg.match(/^400(13|25|95)/)){                                                                                                                          
+        subAstockCounter();
         return true;
     }else{
         if(task.retry >= settings.queue.retry){
             logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t"+ "\tretry count more than "+settings.queue.retry);
+            subAstockCounter();
             return true;
         }else{
             return false;
