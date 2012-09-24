@@ -115,6 +115,7 @@ var send = function(task, sender, context){
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
+            subAstockCounter();
             logger.info("error\ttimeout :" + task.uri);
             sender.running = false;
             dequeue();
@@ -188,6 +189,13 @@ var getAccount = function(blog){
     }
     return weiboAccounts[accountKey];
 }    
+var subAstockCounter = function(){
+    redisCli.decr('a_stock_counter', function(err, count){
+        if(count < 0){
+            redisCli.set('a_stock_counter', 0, function(){});
+        }
+    });
+}
 
 /**
  发送结束后的处理，返回true表示发送完成
@@ -195,20 +203,13 @@ var getAccount = function(blog){
 var complete = function(error, body, blog, context){
     var task = context.task;
     var user = context.user;
-    var subAstockCounter = function(){
-        if(user.stock_code == 'a_stock'){
-            redisCli.decr('a_stock_counter', function(err, count){
-                if(count < 0){
-                    redisCli.set('a_stock_counter', 0, function(){});
-                }
-            });
-        }
-    }
 
     if(!error){    
         logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
-        subAstockCounter();
+        if(user.stock_code == 'a_stock'){
+            subAstockCounter();
+        }
         return true;
     }
 
@@ -225,12 +226,16 @@ var complete = function(error, body, blog, context){
     //40013太长, 40025重复
     //40095: content is illegal!
     }else if(errMsg && errMsg.match(/^400(13|25|95)/)){                                                                                                                          
-        subAstockCounter();
+        if(user.stock_code == 'a_stock'){
+            subAstockCounter();
+        }
         return true;
     }else{
         if(task.retry >= settings.queue.retry){
             logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t"+ "\tretry count more than "+settings.queue.retry);
-            subAstockCounter();
+            if(user.stock_code == 'a_stock'){
+                subAstockCounter();
+            }
             return true;
         }else{
             return false;
