@@ -114,6 +114,14 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
+        if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
+            logger.info("error\ttimeout :" + task.uri);
+            sender.running = false;
+            dequeue();
+            taskBack(task, true);
+            return;
+        }
+
         //微博账号错误
         var account = getAccount(blog);
         if(!account){
@@ -267,7 +275,7 @@ process.on('uncaughtException', function(e){
 setTimeout(function(){
     var sender = new Sender();
     sender.init(settings);
-    var task = {uri:'mysql://172.16.33.238:3306/weibo?article_subject#2'};
+    var task = {uri:'mysql://172.16.33.238:3306/weibo?article_subject#1'};
     sender.on('send', function(error, body, blog, context){
         console.log(context);
         console.log(error);
