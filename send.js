@@ -38,12 +38,14 @@ db.loadAccounts(function(err, accounts){
 
 //每小时清空受限账号
 //凌晨2点清空a_stock的计数器
+//a_stock计时器
+var aStockTimer = 0;
 setInterval(function(){
     if(new Date().getMinutes() % 10 == 0){
         limitedAccounts = {};
     }
     var dt = new Date();
-    if(dt.getHours() == 2 && dt.getMinutes() == 1){
+    if((dt.getHours() == 2 && dt.getMinutes() == 1) || Date.now() - aStockTimer > 360000){
         redisCli.set('a_stock_counter', 0, function(){});
     }
 }, 60000);
@@ -195,6 +197,7 @@ var getAccount = function(blog){
     return weiboAccounts[accountKey];
 }    
 var subAstockCounter = function(){
+    aStockTimer = Date.now();
     redisCli.decr('a_stock_counter', function(err, count){
         if(count < 0){
             redisCli.set('a_stock_counter', 0, function(){});
