@@ -14,7 +14,7 @@ var redisCli = redis.createClient(settings.redis.port, settings.redis.host);
 //发送队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
 
-var Sender = require('./lib/sender').Sender;
+var Sender = require('./lib/sender_v2').Sender;
 
 //发送对象保存在该数组中
 var senders = [];
@@ -103,7 +103,6 @@ var start = function(){
 
 var send = function(task, sender, context){
     db.getBlogByUri(task.uri, function(err, results){
-        console.log(results);
         if(err || results.length == 0){
             logger.info("error\tNot found the resource:" + task.uri);
             sender.running = false;
@@ -114,6 +113,13 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
+        if(blog.stock_code != 'a_stock'){
+            logger.info("error\tnot a_stock:" + task.uri);
+            sender.running = false;
+            dequeue();
+            taskBack(task, true);
+            return;
+        }
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
             subAstockCounter();
             logger.info("error\ttimeout :" + task.uri);
@@ -131,7 +137,6 @@ var send = function(task, sender, context){
             taskBack(task, true);
             return;
         }
-
         if(limitedAccounts[account.email]){
             sender.running = false;
             dequeue();
@@ -212,20 +217,21 @@ var complete = function(error, body, blog, context){
         }
         return true;
     }
+    if(!error.error_code){
+        error.error_code = 70000;
+    }
 
     var errMsg = error.error;
     logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + blog.source +"\t"+ errMsg); 
 
     //发送受限制
-    if(errMsg && errMsg.match(/^40(308|090|310)/)){
-        if(errMsg.match(/^40308/) && typeof limitedAccounts[user.email] !== 'object'){
-            limitedAccounts[user.email] = {start:tool.timestamp()};
-        } 
+    if(error && error.error_code && error.error_code >= 10021 && error.error_code <= 10024){
+        limitedAccounts[user.email] = {start:tool.timestamp()};
         console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
     //40095: content is illegal!
-    }else if(errMsg && errMsg.match(/^400(13|25|95)/)){                                                                                                                          
+    }else if(error && error.error_code >= 20017 && error.error_code <= 20021){
         if(user.stock_code == 'a_stock'){
             subAstockCounter();
         }
