@@ -115,13 +115,6 @@ var send = function(task, sender, context){
         
         blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
-        if(blog.stock_code != 'a_stock'){
-            logger.info("error\tnot a_stock:" + task.uri);
-            sender.running = false;
-            dequeue();
-            taskBack(task, true);
-            return;
-        }
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
             subAstockCounter();
             logger.info("error\ttimeout :" + task.uri);
@@ -285,11 +278,10 @@ process.on('uncaughtException', function(e){
 /**
  * 测试代码
  * 
-
 setTimeout(function(){
     var sender = new Sender();
     sender.init(settings);
-    var task = {uri:'mysql://172.16.33.238:3306/weibo?article_subject#1'};
+    var task = {uri:'mysql://172.16.33.238:3306/weibo?micro_blog#143915'};
     sender.on('send', function(error, body, blog, context){
         console.log(context);
         console.log(error);
