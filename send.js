@@ -145,7 +145,7 @@ var send = function(task, sender, context){
             }else{
                 blog.content = blog.content + blog.url;
                 context.user = account;
-                sender.send(blog, account, context);    
+                sender.send(blog, account, context);
             }
             
         });
@@ -206,7 +206,7 @@ var complete = function(error, body, blog, context){
     var user = context.user;
 
     if(!error){    
-        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id + "\t" + body.t_url);
+        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id;
         db.sendSuccess(blog, body.id, body.t_url, user.id);
         if(user.stock_code == 'a_stock'){
             subAstockCounter();
@@ -221,13 +221,13 @@ var complete = function(error, body, blog, context){
     logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t" + blog.source +"\t"+ errMsg); 
 
     //发送受限制
-    if(error && error.error_code && error.error_code >= 10021 && error.error_code <= 10024){
+    if(error.nextAction == 'delay'){
         limitedAccounts[user.email] = {start:tool.timestamp()};
         console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
     //40095: content is illegal!
-    }else if(error && error.error_code >= 20017 && error.error_code <= 20021){
+    }else if(error.nextAction == 'drop'){
         if(user.stock_code == 'a_stock'){
             subAstockCounter();
         }
