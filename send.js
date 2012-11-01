@@ -14,7 +14,7 @@ var redisCli = redis.createClient(settings.redis.port, settings.redis.host);
 //发送队列的API
 var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
 
-var Sender = require('./lib/sender_v2').Sender;
+var Sender = require('./lib/sender_v3').Sender;
 
 //发送对象保存在该数组中
 var senders = [];
@@ -206,7 +206,7 @@ var complete = function(error, body, blog, context){
     var user = context.user;
 
     if(!error){    
-        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id;
+        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id);
         db.sendSuccess(blog, body.id, body.t_url, user.id);
         if(user.stock_code == 'a_stock'){
             subAstockCounter();

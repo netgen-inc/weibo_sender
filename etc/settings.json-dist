@@ -2,6 +2,12 @@
     "logFile":"microblog.log",
     "mode":"debug",
     "sendersCount":5,
+    "weiboCenter" : {
+        "urlRoot" : "http://127.0.0.1:8899",
+        "appName" : "stockradar",
+        "key":"12345678"
+    },
+
     "weibo":{
         "appkey":"88888888", 
         "secret":"888888888888888888888888888", 
