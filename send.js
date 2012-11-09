@@ -1,5 +1,6 @@
 var fs = require('fs');
 var settings = require(__dirname + '/etc/settings.json');
+var async = require("async");
 var url = require('url');
 var de = require('devent').createDEvent('sender');
 var queue = require('queuer');
@@ -12,7 +13,9 @@ var redis = require("redis");
 var redisCli = redis.createClient(settings.redis.port, settings.redis.host);
 
 //发送队列的API
-var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
+var middleQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', settings.queue.send);
+var repostQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', 'weibo_repost');
+var sendQ = queue.getQueue('http://'+settings.queue.host+':'+settings.queue.port+'/queue', 'weibo_to_center');
 
 var Sender = require('./lib/sender_v3').Sender;
 
@@ -64,10 +67,43 @@ var taskBack = function(task,  status){
     }
 }
 
+var deMiddleQ = function ()  {
+    middleQ.dequeue (function (err, task) {
+        if (err == 'empty'|| !task) {
+            return;
+        }
+        taskBack(task, true);
+        var reg = task.uri.match(/#(\d+)$/);
+        var id = reg[1];
+        var uriObj = url.parse(task.uri);
+        db.getBlogById(id, uriObj.query, function (err, result) {
+            if(err || result.length == 0){
+                logger.info("error\tNot found the resource:" + task.uri);
+                deMiddleQ();
+                return; 
+            }
+
+            var blog = result[0];
+            var ak = settings.mode == 'debug' ? 'sz900000' : blog.stock_code.toLowerCase();
+            var accounts = weiboAccounts.stocks[ak];
+            if(!accounts) {
+                deMiddleQ();
+                return; 
+            }
+            for (var provider in accounts) {
+                var uri = task.uri + "_" + accounts[provider].id;
+                sendQ.enqueue(uri);
+            }
+            logger.info("success:" + task.uri);
+            deMiddleQ();
+        });
+    });
+}
+
 var dequeue = function(){
     for(var i = 0; i < senders.length; i++){
         if(settings.mode == 'debug'){
-            console.log('running status--'+ i + '--'+ senders[i].running);
+            //console.log('running status--'+ i + '--'+ senders[i].running);
         }
         
         if(senders[i].running){
@@ -90,13 +126,18 @@ var dequeue = function(){
 
 var start = function(){
     setInterval(function(){
-        dequeue();    
+        dequeue();  
+        deMiddleQ();  
     }, settings.queue.interval);  
     
     de.on('queued', function( queue ){
-        if(queue == settings.queue.send){
+        if(queue == 'weibo_to_center'){
             console.log( queue + "有内容");
             dequeue();
+        }
+
+        if(queue == 'weibo_send') {
+            deMiddleQ();
         }
     }); 
     console.log('sender start ok'); 
@@ -104,7 +145,20 @@ var start = function(){
 
 
 var send = function(task, sender, context){
-    db.getBlogByUri(task.uri, function(err, results){
+    var reg, uriObj = url.parse(task.uri);;
+    if(!(reg = task.uri.match(/#(\d+)_(\d+)$/))) {
+        return;
+    }
+
+    var blogId = reg[1], accountId = reg[2], table = uriObj.query;
+    var account = weiboAccounts.ids[accountId]
+    if (!account || !account.weibo_center_id) {
+        logger.info("error\tNot found the account:" + task.uri);
+        sender.running = false;
+        dequeue();
+        return;
+    } 
+    db.getBlogById(blogId, table, function(err, results){
         if(err || results.length == 0){
             logger.info("error\tNot found the resource:" + task.uri);
             sender.running = false;
@@ -117,84 +171,101 @@ var send = function(task, sender, context){
         blog.stock_code = blog.stock_code.toLowerCase();
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
             subAstockCounter();
-            logger.info("error\ttimeout :" + task.uri);
+            logger.info("error\ttimeout:" + task.uri);
             sender.running = false;
             dequeue();
             taskBack(task, true);
             return;
         }
 
-        //微博账号错误
-        var account = getAccount(blog);
-        if(!account){
-            logger.info("error\t" + blog.id + "\t" + blog.stock_code + "\t"+blog.block_id + "\t"+blog.content_type + "\t"+blog.source+"\tNOT Found the account\t"); 
-            sender.running = false;
-            taskBack(task, true);
-            return;
-        }
-        if(limitedAccounts[account.email]){
-            sender.running = false;
-            dequeue();
-            return;
-        }
-
-        sendAble(blog, function(err, result){
-            if(!result){
+        blog.content = blog.content + blog.url;
+        sendAble(account, blog, function(err, result){
+            if(err){
+                if (err.msg == 'sent') {
+                    logger.info("error\tsent:" + task.uri);
+                    taskBack(task, true);
+                }
                 sender.running = false;
                 dequeue();
             }else{
-                blog.content = blog.content + blog.url;
                 context.user = account;
-                sender.send(blog, account, context);
+                sender.send(blog, account, context); 
             }
             
         });
     });
 };
 
-//限速
-var sendAble = function(blog, callback){
-    if(blog.content_type != 'zixun'){
-        callback(null, true);
+//判断账号是否能发送微博
+//为了解决并发的情况，添加判断过程中的对账号的锁定
+//首先检查锁定状态，然后检查是否3分钟限制和该账号微博是否发送过
+var lockedAccounts = {};
+var sendAble = function(account, blog, callback){
+    if(lockedAccounts[account.id]) {
+        callback({msg:'limit'}, false);
         return;
     }
-    var ts = tool.timestamp();
-    var key = "SEND_LIMIT_" + blog.stock_code;
-    redisCli.get(key, function(err, lastSend){
-        if(!lastSend){
-            redisCli.setex(key, 180, ts);
-            callback(null, true);
-        }else{
-            callback(null, false);
+    lockedAccounts[account.id] = account;
+    var accountAble = function (cb) {
+        if(blog.content_type != 'zixun'){
+            cb(null, true);
+            return;
         }
+        var ts = tool.timestamp();
+        var key = "SEND_LIMIT_" + account.id;
+        redisCli.get(key, function(err, lastSend){
+            if(!lastSend){
+                redisCli.setex(key, 180, ts);
+                cb(null, true);
+            }else{
+                cb({err:'limit'}, false);
+            }
+        });
+    };
+
+    var blogAble = function (cb) {
+        db.getSent(blog.id, account.id, function (err, result) {
+            if(result.length == 0) {
+                cb(null, true);
+            }else {
+                cb({msg:'sent'}, false);
+            } 
+        });
+    }
+
+    async.series([blogAble, accountAble], function (err, result) {
+        delete lockedAccounts[account.id];
+        callback(err);
     });
 }
 
-var getAccount = function(blog){
-    var accountKey = blog.stock_code;
-    if(blog.block_id && blog.block_id > 0){
-        accountKey = blog.block_id;
-    }
-
-    //debug模式下，总是使用stock0@netgen.com.cn发送微博
-    if(settings.mode == 'debug'){
-        var accountKey = 'sz900000';    
-    }
-    
-    if(!weiboAccounts[accountKey] || 
-        !weiboAccounts[accountKey].access_token || 
-        !weiboAccounts[accountKey].access_token_secret){
-        console.log('error account key ' + accountKey);
-        return;
-    }
-    return weiboAccounts[accountKey];
-}    
 var subAstockCounter = function(){
     aStockTimer = Date.now();
     redisCli.decr('a_stock_counter', function(err, count){
         if(count < 0){
             redisCli.set('a_stock_counter', 0, function(){});
         }
+    });
+}
+
+var pushRepostTask = function (microBlogId, sentId) {
+    db.getReposts(microBlogId, function (err, result) {
+        if(err || result.length == 0) {
+            return;
+        }
+
+        var uri = "mysql://" + settings.mysql.host + ":"
+                 + settings.mysql.port + "/"
+                 + settings.mysql.database + "?repost_task#";
+
+        async.forEach(result, function (task, cb) {
+            uri += task.id + "_" + sentId;
+            console.log(uri);
+            repostQ.enqueue(uri);
+            cb();
+        }, function () {
+
+        });                 
     });
 }
 
@@ -206,8 +277,13 @@ var complete = function(error, body, blog, context){
     var user = context.user;
 
     if(!error){    
-        logger.info("success\t" + blog.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id);
-        db.sendSuccess(blog, body.id, body.t_url, user.id);
+        logger.info("success\t" + blog.id + "\t" + user.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id);
+        db.sendSuccess(blog, body.id, body.t_url, user.id, function (err, result) {
+            if(!err) {
+                pushRepostTask(blog.id, result.insertId);    
+            }
+            
+        });
         if(user.stock_code == 'a_stock'){
             subAstockCounter();
         }
