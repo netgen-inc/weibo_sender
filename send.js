@@ -48,7 +48,7 @@ setInterval(function(){
         limitedAccounts = {};
     }
     var dt = new Date();
-    if((dt.getHours() == 2 && dt.getMinutes() == 1) || Date.now() - aStockTimer > 360000){
+    if((dt.getHours() == 2 && dt.getMinutes() == 1) || Date.now() - aStockTimer > 600000){
         redisCli.set('a_stock_counter', 0, function(){});
     }
 }, 60000);
@@ -92,6 +92,7 @@ var deMiddleQ = function ()  {
             }
             for (var provider in accounts) {
                 var uri = task.uri + "_" + accounts[provider].id;
+                console.log(uri);
                 sendQ.enqueue(uri);
             }
             logger.info("success:" + task.uri);
@@ -151,11 +152,12 @@ var send = function(task, sender, context){
     }
 
     var blogId = reg[1], accountId = reg[2], table = uriObj.query;
-    var account = weiboAccounts.ids[accountId]
+    var account = weiboAccounts.ids[accountId];
     if (!account || !account.weibo_center_id) {
         logger.info("error\tNot found the account:" + task.uri);
         sender.running = false;
         dequeue();
+        taskBack(task, true);
         return;
     } 
     db.getBlogById(blogId, table, function(err, results){
@@ -167,7 +169,7 @@ var send = function(task, sender, context){
             return; 
         }
         
-        blog = results[0];
+        var blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
             subAstockCounter();
@@ -201,11 +203,6 @@ var send = function(task, sender, context){
 //首先检查锁定状态，然后检查是否3分钟限制和该账号微博是否发送过
 var lockedAccounts = {};
 var sendAble = function(account, blog, callback){
-    if(lockedAccounts[account.id]) {
-        callback({msg:'limit'}, false);
-        return;
-    }
-    lockedAccounts[account.id] = account;
     var accountAble = function (cb) {
         if(blog.content_type != 'zixun'){
             cb(null, true);
@@ -234,7 +231,6 @@ var sendAble = function(account, blog, callback){
     }
 
     async.series([blogAble, accountAble], function (err, result) {
-        delete lockedAccounts[account.id];
         callback(err);
     });
 }
@@ -259,9 +255,9 @@ var pushRepostTask = function (microBlogId, sentId) {
                  + settings.mysql.database + "?repost_task#";
 
         async.forEach(result, function (task, cb) {
-            uri += task.id + "_" + sentId;
-            console.log(uri);
-            repostQ.enqueue(uri);
+            var turi = uri + task.id + "_" + sentId;
+            console.log(turi);
+            repostQ.enqueue(turi);
             cb();
         }, function () {
 
@@ -278,7 +274,7 @@ var complete = function(error, body, blog, context){
 
     if(!error){    
         logger.info("success\t" + blog.id + "\t" + user.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id);
-        db.sendSuccess(blog, body.id, body.t_url, user.id, function (err, result) {
+        db.sendSuccess(blog, body.id, body.t_url, user, function (err, result) {
             if(!err) {
                 pushRepostTask(blog.id, result.insertId);    
             }
