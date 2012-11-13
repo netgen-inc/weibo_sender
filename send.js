@@ -41,16 +41,11 @@ db.loadAccounts(function(err, accounts){
 
 //每小时清空受限账号
 //凌晨2点清空a_stock的计数器
-//a_stock计时器
-var aStockTimer = 0;
 setInterval(function(){
     if(new Date().getMinutes() % 10 == 0){
         limitedAccounts = {};
     }
     var dt = new Date();
-    if((dt.getHours() == 2 && dt.getMinutes() == 1) || Date.now() - aStockTimer > 600000){
-        redisCli.set('a_stock_counter', 0, function(){});
-    }
 }, 60000);
 
 //status == true 任务正常完成
@@ -148,6 +143,9 @@ var start = function(){
 var send = function(task, sender, context){
     var reg, uriObj = url.parse(task.uri);;
     if(!(reg = task.uri.match(/#(\d+)_(\d+)$/))) {
+        sender.running = false;
+        taskBack(task, true);
+        dequeue();
         return;
     }
 
@@ -172,12 +170,16 @@ var send = function(task, sender, context){
         var blog = results[0];
         blog.stock_code = blog.stock_code.toLowerCase();
         if(blog.stock_code == 'a_stock' && tool.timestamp() - blog.in_time > 3600){
-            subAstockCounter();
             logger.info("error\ttimeout:" + task.uri);
             sender.running = false;
             dequeue();
             taskBack(task, true);
             return;
+        }
+
+        //如果是A股雷达，标记最后出现时间，供转发程序判断
+        if(blog.stock_code == 'a_stock') {
+            redisCli.setex('a_stock_send_' + account.id, 240, 1);
         }
 
         blog.content = blog.content + blog.url;
@@ -235,15 +237,6 @@ var sendAble = function(account, blog, callback){
     });
 }
 
-var subAstockCounter = function(){
-    aStockTimer = Date.now();
-    redisCli.decr('a_stock_counter', function(err, count){
-        if(count < 0){
-            redisCli.set('a_stock_counter', 0, function(){});
-        }
-    });
-}
-
 var pushRepostTask = function (microBlogId, sentId) {
     db.getReposts(microBlogId, function (err, result) {
         if(err || result.length == 0) {
@@ -278,11 +271,7 @@ var complete = function(error, body, blog, context){
             if(!err) {
                 pushRepostTask(blog.id, result.insertId);    
             }
-            
         });
-        if(user.stock_code == 'a_stock'){
-            subAstockCounter();
-        }
         return true;
     }
     if(!error.error_code){
@@ -300,16 +289,10 @@ var complete = function(error, body, blog, context){
     //40013太长, 40025重复
     //40095: content is illegal!
     }else if(error.nextAction == 'drop'){
-        if(user.stock_code == 'a_stock'){
-            subAstockCounter();
-        }
         return true;
     }else{
         if(task.retry >= settings.queue.retry){
             logger.info("error\t" + blog.id +"\t"+ blog.stock_code + "\t"+ "\tretry count more than "+settings.queue.retry);
-            if(user.stock_code == 'a_stock'){
-                subAstockCounter();
-            }
             return true;
         }else{
             return false;
