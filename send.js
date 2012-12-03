@@ -182,7 +182,12 @@ var send = function(task, sender, context){
             redisCli.setex('a_stock_send_' + account.id, 240, 1);
         }
 
-        blog.content = blog.content + blog.url;
+        var url = '';
+        if(blog.url) {
+          url = blog.url + (blog.url.indexOf('?') == -1 ? '?' : '&');
+          url += "provider=" + account.provider;
+        }
+        blog.content = blog.content + url;
         sendAble(account, blog, function(err, result){
             if(err){
                 if (err.msg == 'sent') {
