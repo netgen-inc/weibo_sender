@@ -23,6 +23,7 @@ var settings = {
         port:'3000',
         interval:10000 //��ѯ��������λ�Ǻ���
     }
+
 }
 
 exports.settings = settings;
