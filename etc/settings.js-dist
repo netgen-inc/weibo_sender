@@ -1,14 +1,14 @@
 var settings = {
     logFile:'microblog.log',
     weibo:{
-        appkey:'196346996',
-        secret:'4b1ee49ec3474192d9c3ed208db79a30',
+        appkey:'1111111111',
+        secret:'111111111111111111111111111',
         host:'api.weibo.com',
         update:'/2/statuses/update.json',
         remove:'/2/statuses/destroy.json',
         token:'/oauth2/access_token',
-        password:'10658068', //ËùÓÐÕËºÅµÄÄ¬ÈÏÃÜÂë,
-        interval:60 //Í¬Ò»¸öÕËºÅµÄ·¢Î¢²©¼ä¸ô£¬µ¥Î»Ãë
+        password:'10658068', //ï¿½ï¿½ï¿½ï¿½ï¿½ËºÅµï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,
+        interval:60 //Í¬Ò»ï¿½ï¿½ï¿½ËºÅµÄ·ï¿½Î¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
     },
     mysql:{
         host:'172.16.33.237',
@@ -21,7 +21,7 @@ var settings = {
         remove:'weibo_delete',
         host:'172.16.33.237',
         port:'3000',
-        interval:10000 //ÂÖÑ¯¼ä¸ô£¬µ¥Î»ÊÇºÁÃë
+        interval:10000 //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Çºï¿½ï¿½ï¿½
     }
 }
 
