@@ -273,7 +273,8 @@ var complete = function(error, body, blog, context){
     if(!error){    
         logger.info("success\t" + blog.id + "\t" + user.id + "\t" + user.stock_code + "\t" + blog.block_id + "\t" + blog.content_type + "\t" + blog.source + "\t" + blog.content + "\t" + body.id);
         db.sendSuccess(blog, body.id, body.t_url, user, function (err, result) {
-            if(!err) {
+            //新浪不转发
+            if(!err && user.provider != 'sina') {
                 pushRepostTask(blog.id, result.insertId);    
             }
         });
@@ -289,7 +290,7 @@ var complete = function(error, body, blog, context){
     //发送受限制
     if(error.nextAction == 'delay'){
         limitedAccounts[user.email] = {start:tool.timestamp()};
-        console.log(limitedAccounts);
+        //console.log(limitedAccounts);
         return 1;
     //40013太长, 40025重复
     //40095: content is illegal!
